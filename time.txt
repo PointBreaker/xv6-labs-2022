@@ -1,10 +1,1 @@
-sleep: 30 mins
-pingpong: 1 hr
-primes: 2.5 hrs
-find: 2 hrs
-xargs: 3 hrs
-
-my test for xargs:
-(echo one; echo two; echo three) | xargs echo try
----- equal to normal shell
-(echo one; echo two; echo three) | xargs -n 1 echo try
+9
