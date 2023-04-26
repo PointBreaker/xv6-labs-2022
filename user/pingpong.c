@@ -9,6 +9,7 @@ main(int argc, char *argv[])
   pipe(p);
   char buf[] = "hello";
   int pid;
+  int status;
   int cpid = fork();
   if (cpid == 0) { // child
     pid = getpid();
@@ -17,13 +18,16 @@ main(int argc, char *argv[])
     write(p[1], buf, 1);
     close(p[0]);
     close(p[1]);
+    exit(0);
   } else { // parent
     pid = getpid();
     write(p[1], buf, 1);
     read(p[0], buf, 1);
     printf("%d: received pong\n", pid);
+    wait(&status);
     close(p[0]);
     close(p[1]);
+    exit(0);
   }
   exit(0);
 }
