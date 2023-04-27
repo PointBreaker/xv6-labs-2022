@@ -6,9 +6,16 @@ void primes(int n, int * p_old) {
   int buf;
   int status;
   int p[2];
-  pipe(p);
+  if (pipe(p) < 0) {
+    fprintf(2, "pipe failed\n");
+    exit(1);
+  }
   printf("prime %d\n", n);
   int cpid = fork();
+  if (cpid < 0) {
+    fprintf(2, "fork failed\n");
+    exit(1);
+  }
   if (n == 2) { // init
     if (cpid == 0) { // child process
       close(p[1]);
@@ -30,6 +37,7 @@ void primes(int n, int * p_old) {
     }
   } else {
     if (cpid == 0) { // child process
+      close(p_old[0]);
       close(p[1]);
       if (read(p[0], &buf, 4) != 0) {
         primes(buf, p);
