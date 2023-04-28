@@ -26,6 +26,18 @@ extern char trampoline[]; // trampoline.S
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
 
+uint64
+sysinfonproc()
+{
+  uint64 res = 0;
+  for (int i = 0; i < NPROC; i++) {
+    if (proc[i].state != UNUSED) {
+      res++;
+    }
+  }
+  return res;
+}
+
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
