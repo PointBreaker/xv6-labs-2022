@@ -80,18 +80,21 @@ sys_pgaccess(void)
 	argaddr(0, &base);
 	argint(1, &len);
 	argaddr(2, &mask);
+	base = PGROUNDDOWN(base);
 	uint64 kernel_mask = 0;
-	for (int i = 1; i < len; i++)
+	if (len > 32) return -1;
+	for (int i = 0; i < len; i++)
 	{
-		pte_t cur_pte = *walk(p->pagetable, base + (PGSIZE * i), 1);
-		// printf("cur_pte: %d: %p\n", i, cur_pte); // debug pte
-		if ((cur_pte & 0b1000000) != 0)
+		pte_t *cur_pte = walk(p->pagetable, base + (PGSIZE * i), 0);
+		// printf("cur_pte: %d: %p\n", i, *cur_pte); // debug pte
+		if ((* cur_pte & PTE_A) != 0)
 		{ // check the access bit
 			// printf("hit: %d\n", i);
 			kernel_mask |= (1 << i);
+			*cur_pte &= ~PTE_A;
 		}
 	}
-	printf("kernel_mask: %p\n", kernel_mask);
+	// printf("kernel_mask: %p\n", kernel_mask);
 	if (copyout(p->pagetable, mask, (char *)&kernel_mask, sizeof(kernel_mask)) < 0)
 	{
 		return -1;
