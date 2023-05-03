@@ -77,8 +77,38 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2) {
+    p->passed_ticks += 1;
+    if (p->passed_ticks == p->ticks && p->alarm_return == 0) { // handle alarm
+      p->alarm_return = 1; // lock alarm
+      p->passed_ticks = 0;
+      p->restore.epc = p->trapframe->epc;
+      p->restore.ra = p->trapframe->ra;
+      p->restore.sp = p->trapframe->sp;
+      p->restore.s0 = p->trapframe->s0;
+      p->restore.s1 = p->trapframe->s1;
+      p->restore.s2 = p->trapframe->s2;
+      p->restore.s3 = p->trapframe->s3;
+      p->restore.s4 = p->trapframe->s4;
+      p->restore.s5 = p->trapframe->s5;
+      p->restore.s6 = p->trapframe->s6;
+      p->restore.s7 = p->trapframe->s7;
+      p->restore.s8 = p->trapframe->s8;
+      p->restore.s9 = p->trapframe->s9;
+      p->restore.s10 = p->trapframe->s10;
+      p->restore.s11 = p->trapframe->s11;
+      p->restore.a0 = p->trapframe->a0;
+      p->restore.a1 = p->trapframe->a1;
+      p->restore.a2 = p->trapframe->a2;
+      p->restore.a3 = p->trapframe->a3;
+      p->restore.a4 = p->trapframe->a4;
+      p->restore.a5 = p->trapframe->a5;
+      p->restore.a6 = p->trapframe->a6;
+      p->restore.a7 = p->trapframe->a7;
+      p->trapframe->epc = p->handler; // change epc!!!!! I tried like thousands of different ways
+    }
     yield();
+  }
 
   usertrapret();
 }

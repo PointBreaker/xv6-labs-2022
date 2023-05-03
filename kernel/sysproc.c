@@ -92,3 +92,47 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_sigalarm(void)
+{
+  int ticks;
+  uint64 fn;
+  argint(0, &ticks);
+  argaddr(1, &fn);
+  struct proc *p = myproc();
+  p->ticks = ticks;
+  p->handler = fn;
+  return 0;
+}
+
+uint64
+sys_sigreturn(void)
+{
+  struct proc *p = myproc();
+  p->trapframe->ra = p->restore.ra;
+  p->trapframe->sp = p->restore.sp;
+  p->trapframe->s0 = p->restore.s0;
+  p->trapframe->s1 = p->restore.s1;
+  p->trapframe->s2 = p->restore.s2;
+  p->trapframe->s3 = p->restore.s3;
+  p->trapframe->s4 = p->restore.s4;
+  p->trapframe->s5 = p->restore.s5;
+  p->trapframe->s6 = p->restore.s6;
+  p->trapframe->s7 = p->restore.s7;
+  p->trapframe->s8 = p->restore.s8;
+  p->trapframe->s9 = p->restore.s9;
+  p->trapframe->s10 = p->restore.s10;
+  p->trapframe->s11 = p->restore.s11;
+  p->trapframe->a0 = p->restore.a0;
+  p->trapframe->a1 = p->restore.a1;
+  p->trapframe->a2 = p->restore.a2;
+  p->trapframe->a3 = p->restore.a3;
+  p->trapframe->a4 = p->restore.a4;
+  p->trapframe->a5 = p->restore.a5;
+  p->trapframe->a6 = p->restore.a6;
+  p->trapframe->a7 = p->restore.a7;
+  p->trapframe->epc = p->restore.epc;
+  p->alarm_return = 0;
+  return p->restore.a0;
+}

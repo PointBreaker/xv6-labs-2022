@@ -79,6 +79,38 @@ struct trapframe {
   /* 280 */ uint64 t6;
 };
 
+struct restore {
+  uint64 ra;
+  uint64 sp;
+
+  // callee-saved
+  uint64 s0;
+  uint64 s1;
+  uint64 s2;
+  uint64 s3;
+  uint64 s4;
+  uint64 s5;
+  uint64 s6;
+  uint64 s7;
+  uint64 s8;
+  uint64 s9;
+  uint64 s10;
+  uint64 s11;
+  
+  uint64 epc;
+  // return value
+  uint64 a0;
+
+  // args
+  uint64 a1;
+  uint64 a2;
+  uint64 a3;
+  uint64 a4;
+  uint64 a5;
+  uint64 a6;
+  uint64 a7;
+};
+
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -91,6 +123,12 @@ struct proc {
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
+
+  int ticks;
+  uint64 handler;
+  int passed_ticks;
+  int alarm_return;
+  struct restore restore;      // same set of registers to restore after timer interrupt
 
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process

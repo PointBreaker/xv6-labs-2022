@@ -103,6 +103,8 @@ test1()
     // occurred; another is that that registers may not be
     // restored correctly, causing i or j or the address ofj
     // to get an incorrect value.
+    printf("i: %d\n", i);
+    printf("j: %d\n", j);
     printf("\ntest1 failed: foo() executed fewer times than it was called\n");
   } else {
     printf("test1 passed\n");
@@ -186,8 +188,10 @@ test3()
     ;
   asm volatile("mv %0, a0" : "=r" (a0) );
 
-  if(a0 != 0xac)
+  if(a0 != 0xac){
+    printf("a0 is now %d\n", a0);
     printf("test3 failed: register a0 changed\n");
+  }
   else
     printf("test3 passed\n");
 }
