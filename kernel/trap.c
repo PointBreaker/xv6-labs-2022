@@ -67,6 +67,20 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if(r_scause() == 0xd || r_scause() == 0xf) {
+    uint64 va = r_stval();
+    printf("page fault here: %p\n", va);
+    uint64 ka = (uint64) kalloc(); // allocate a new page
+    if (ka == 0) { // kalloc failed
+        p->killed = 1;
+    } else { // map the new page to va
+        memset((void *) ka, 0, PGSIZE);
+        va = PGROUNDDOWN(va);
+        if (mappages(p->pagetable, va, PGSIZE, ka, PTE_W|PTE_U|PTE_R) != 0) {
+            kfree((void *) ka);
+            p->killed = 1;
+        }
+    }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
