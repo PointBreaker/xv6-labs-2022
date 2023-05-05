@@ -69,17 +69,33 @@ usertrap(void)
     // ok
   } else if(r_scause() == 0xd || r_scause() == 0xf) {
     uint64 va = r_stval();
-    printf("page fault here: %p\n", va);
-    uint64 ka = (uint64) kalloc(); // allocate a new page
-    if (ka == 0) { // kalloc failed
-        p->killed = 1;
-    } else { // map the new page to va
-        memset((void *) ka, 0, PGSIZE);
-        va = PGROUNDDOWN(va);
-        if (mappages(p->pagetable, va, PGSIZE, ka, PTE_W|PTE_U|PTE_R) != 0) {
+    if (va < p->sz && va > p->allocated_sz) {
+        uint64 ka = (uint64) kalloc(); // allocate a new page
+        if (ka == 0) { // kalloc failed
+            printf("usertrap(): page fault: out of memory\n");
+            printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+            p->killed = 1;
+        } else if(va <= p->trapframe->sp) {
+            printf("usertrap(): page fault: below user stack\n");
+            printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
             kfree((void *) ka);
             p->killed = 1;
+        } else { // map the new page to va
+            memset((void *) ka, 0, PGSIZE);
+            va = PGROUNDDOWN(va);
+            if (mappages(p->pagetable, va, PGSIZE, ka, PTE_W|PTE_U|PTE_R) != 0) {
+                kfree((void *) ka);
+                printf("usertrap(): page fault: mappage error\n");
+                printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+                p->killed = 1;
+            } else {
+                p->allocated_sz += PGSIZE;
+            }
         }
+    } else {
+        printf("usertrap(): read or write error, scause: %p\n", r_scause());
+        printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+        p->killed = 1;
     }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);

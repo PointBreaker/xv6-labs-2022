@@ -2231,6 +2231,7 @@ sbrkarg(char *s)
     printf("%s: open sbrk failed\n", s);
     exit(1);
   }
+  printf("mock write: %p\n", *a);
   if ((n = write(fd, a, PGSIZE)) < 0) {
     printf("%s: write sbrk failed\n", s);
     exit(1);
@@ -2239,6 +2240,7 @@ sbrkarg(char *s)
 
   // test writes to allocated memory
   a = sbrk(PGSIZE);
+  printf("mock write to: %p\n", *a);
   if(pipe((int *) a) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
