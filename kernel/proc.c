@@ -295,7 +295,8 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
-
+  printf("parent pagetable: %p\n", p->pagetable);
+  printf("child pagetable: %p\n", np->pagetable);
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 

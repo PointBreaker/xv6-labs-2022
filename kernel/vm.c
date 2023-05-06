@@ -15,6 +15,33 @@ extern char etext[];  // kernel.ld sets this to end of kernel code.
 
 extern char trampoline[]; // trampoline.S
 
+// print the pagetables
+static void vmprint_helper(pagetable_t pt, int level)
+{
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t pte = pt[i];
+    if ((pte & PTE_V) != 0){
+      for (int j = level; j <= 2; j++) // print the dots
+      {
+        printf(" ..");
+      }
+      uint64 child = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, pte, child);
+      if (level != 0) // recursive print on next level
+      {
+        vmprint_helper((pagetable_t) child, level - 1);
+      }
+    }
+  }
+}
+void
+vmprint(pagetable_t pt)
+{
+  printf("page table %p\n", pt);
+  vmprint_helper(pt, 2);
+}
+
 // Make a direct-map page table for the kernel.
 pagetable_t
 kvmmake(void)
@@ -153,8 +180,8 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   for(;;){
     if((pte = walk(pagetable, a, 1)) == 0)
       return -1;
-    if(*pte & PTE_V)
-      panic("mappages: remap");
+    // if(*pte & PTE_V)
+    //   panic("mappages: remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
     if(a == last)
       break;
@@ -306,30 +333,25 @@ int
 uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
 {
   pte_t *pte;
-  uint64 pa, i;
+  uint64 mem;
   uint flags;
-  char *mem;
 
-  for(i = 0; i < sz; i += PGSIZE){
+  for(uint64 i = 0; i < sz; i += PGSIZE){
     if((pte = walk(old, i, 0)) == 0)
       panic("uvmcopy: pte should exist");
     if((*pte & PTE_V) == 0)
       panic("uvmcopy: page not present");
-    pa = PTE2PA(*pte);
+    mem = PTE2PA(*pte);
+    if ((*pte & PTE_W) != 0) { // make ptes unwritable
+        *pte &= ~PTE_W;
+        *pte |= PTE_W_OLD;
+    }
     flags = PTE_FLAGS(*pte);
-    if((mem = kalloc()) == 0)
-      goto err;
-    memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(new, i, PGSIZE, (uint64)mem, flags) != 0){
-      kfree(mem);
-      goto err;
+    if (mappages(new, i, PGSIZE, mem, flags) != 0) {
+        return -1;
     }
   }
   return 0;
-
- err:
-  uvmunmap(new, 0, i / PGSIZE, 1);
-  return -1;
 }
 
 // mark a PTE invalid for user access.

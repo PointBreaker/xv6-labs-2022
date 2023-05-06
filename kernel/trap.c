@@ -67,7 +67,44 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
+  } else if (r_scause() == 0xf) { // write page fault
+    // printf("instruction page fault -- to be implemented");
+    uint64 va = r_stval();
+    pte_t *pte = walk(p->pagetable, va, 0);
+    if (pte == 0) {
+        printf("pte doesn't exsit\n");
+        setkilled(p);
+    } else if ((*pte & PTE_W_OLD) != 0) { // alloc a new mem
+        printf("vm before:\n");
+        vmprint(p->pagetable);
+        char * mem = kalloc();
+        if (mem == 0) {
+            printf("kalloc failed\n");
+            setkilled(p);
+        } else {
+            va = PGROUNDDOWN(va);
+            memmove(mem, (char *)PTE2PA(*pte), PGSIZE); // copy memory
+            if (mappages(p->pagetable, va, PGSIZE, (uint64) mem, (PTE_FLAGS(*pte) | PTE_W) & ~PTE_W_OLD) != 0) { // map page
+                kfree(mem);
+                printf("mappage failed\n");
+                setkilled(p);
+            } else {
+                printf("vm after:\n");
+                vmprint(p->pagetable);
+            }
+        }
+    } else {
+        printf("write not allowed\n");
+        setkilled(p);
+    }
+  } else if (r_scause() == 0xd || r_scause() == 0xc) { // load/instruction page fault
+    // vmprint(p->pagetable);
+    printf("load/instruction page fault -- to be implemented\n");
+    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    setkilled(p);
   } else {
+    vmprint(p->pagetable);
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     setkilled(p);
